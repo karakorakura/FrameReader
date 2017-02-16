@@ -5,8 +5,9 @@ from PIL import Image
 from PIL import ImageTk
 import copy
 import time
+import algorithm.process_image as process_image
 
-#hello 
+
 # Just a silly counter to keep track of frames being
 # generated, it can be used to save frames by giving them
 # unique names in serial order. The counter will be increased
@@ -65,6 +66,14 @@ def processFrame(frame):
     skinRegion = cv2.inRange(imageYCrCb, min_YCrCb, max_YCrCb)
 
     # Do contour detection on skin region
+
+#
+    gray = cv2.medianBlur(skinRegion,11)
+    # thresh1 = process_image.threshold_otsu(gray)
+    # dilation = process_image.region_filling(thresh1)
+    skinRegion=gray
+#
+
     contours, hierarchy = cv2.findContours(skinRegion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Fill the contour on the source image
