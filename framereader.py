@@ -6,6 +6,7 @@ from PIL import ImageTk
 import copy
 import time
 
+#hi
 #hello
 # Just a silly counter to keep track of frames being
 # generated, it can be used to save frames by giving them
