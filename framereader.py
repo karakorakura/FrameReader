@@ -6,7 +6,7 @@ from PIL import ImageTk
 import copy
 import time
 
-#hello
+
 # Just a silly counter to keep track of frames being
 # generated, it can be used to save frames by giving them
 # unique names in serial order. The counter will be increased
@@ -16,7 +16,7 @@ frameNumber = 0
 # A boolean value tell if the frame is to be saved or not
 saveFrame = True
 # A threshold value for blob detection ignoring object smaller than face area
-Facearea =10000
+Facearea =15000
 
 
 ###################################################
@@ -60,7 +60,7 @@ def processFrame(frame):
 
     # Convert frame to YCrCb
     imageYCrCb = cv2.cvtColor(f1, cv2.COLOR_BGR2YCR_CB)
-
+    # imageYCrCb1 = imageYCrCb1[90:323,90:323]
     # Find region with skin tone in YCrCb image
     skinRegion = cv2.inRange(imageYCrCb, min_YCrCb, max_YCrCb)
 
@@ -76,14 +76,18 @@ def processFrame(frame):
             cv2.drawContours(f1, contours, i, (0, 0, 0), -1) # -1 fills the countour, else you can give outline thinkness
 
     # create gray scale image
+    f1small=f1[90:323,90:323]
     gray = cv2.cvtColor(f1, cv2.COLOR_BGR2GRAY)
+
+    # gray = cv2.cvtColor(f1, cv2.COLOR_BGR2GRAY)
     # convert black to white and rest to black
     ret, final = cv2.threshold(gray, 5, 255, cv2.THRESH_BINARY_INV)
 
     frameNumberRead = frameNumberRead + 1
     if saveFrame and frameNumberRead % 25==0:
 
-        sFrame = cv2.resize(final, (100, 100)) # resize to 100 x 100 to save
+        sFrame = cv2.resize(final[90:323,90:323], (100, 100)) # resize to 100 x 100 to save
+        # sFrame = cv2.resize(final, (100, 100)) # resize to 100 x 100 to save
         cv2.imwrite("output/frame-"+str(frameNumber)+".bmp", sFrame)
         frameNumber = frameNumber + 1
 
@@ -132,7 +136,7 @@ def show_frame():
     # NN inputs
     frame = frame[:,54:378]
 
-    # filp the frame to create mirror image effect
+    # flip the frame to create mirror image effect
     frame = cv2.flip(frame, 1)
 
     # all processing is done here
@@ -142,9 +146,13 @@ def show_frame():
     # no need to change
     img1 = Image.fromarray(frame)
     imgtk1 = ImageTk.PhotoImage(image=img1)
+
+    cv2.rectangle(f1,(323,323),(90,90),(0,0,255),0)
     img2 = Image.fromarray(f1)
     imgtk2 = ImageTk.PhotoImage(image=img2)
+
     img3 = Image.fromarray(f2)
+
     imgtk3 = ImageTk.PhotoImage(image=img3)
     display1.imgtk = imgtk1 # Show the live feed
     display1.configure(image=imgtk1)
