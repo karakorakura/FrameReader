@@ -107,7 +107,9 @@ while True:
     foooo = abs(ggray - fgray)
     cv2.imshow('fpppp',foooo)
     foreground1 = (foooo > 5 )
-
+    foreground1= np.asarray(foreground1,dtype=float)
+    print foreground1
+    # foreground1.astype(float)
     cv2.imshow(winName1,g)
 
     cv2.imshow('live',frame2)
