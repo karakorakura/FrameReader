@@ -13,6 +13,7 @@ import algorithm.process_image as process_image
 # unique names in serial order. The counter will be increased
 # by 1 as new frame will be read from video feed.
 frameNumber = 0
+cameraNumber=1;#0 for others
 
 # A boolean value tell if the frame is to be saved or not
 saveFrame = False
@@ -28,7 +29,7 @@ cv2.namedWindow(winName1)
 # cv2.namedWindow(winName2)
 
 
-cap1 = cv2.VideoCapture(0);
+cap1 = cv2.VideoCapture(cameraNumber);
 
 ###########################################
 def backgroundDetect():
@@ -111,10 +112,11 @@ while True:
     foooo = abs(ggray - fgray)
     cv2.imshow('fpppp',foooo)
     foreground1 = (foooo > 15 )
-    foreground1= np.asarray(foreground1,dtype=float)
-    cv2.imshow('binorig',foreground1)
+    foreground1= np.asarray(foreground1,dtype=np.uint8)
     foooo2 = cv2.bitwise_and(f1,f1,mask=foreground1)
     foooo2 = cv2.cvtColor(foooo2,cv2.COLOR_BGR2GRAY)
+    foreground1= np.asarray(foreground1,dtype=float)
+    cv2.imshow('binorig',foreground1)
 
 
     #########
@@ -126,7 +128,7 @@ while True:
     cv2.imshow('afterRegionfillingDilation',dilation)
     foreground1 = dilation
     kernel = np.ones((5,5),np.float)
-    erosion = cv2.erode(foreground1,kernel,iterations=5)
+    erosion = cv2.erode(foreground1,kernel,iterations=1)
     cv2.imshow('erosion',erosion)
     open1 = cv2.morphologyEx(erosion,cv2.MORPH_OPEN,kernel)
     cv2.imshow('open1',open1)
@@ -169,7 +171,7 @@ while True:
 
     # gray = cv2.cvtColor(f1, cv2.COLOR_BGR2GRAY)
     # convert black to white and rest to black
-    ret, final = cv2.threshold(gray, 5, 255, cv2.THRESH_BINARY_INV)
+    ret, final = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY_INV)
     cv2.imshow('final',final)
     ##############
 
