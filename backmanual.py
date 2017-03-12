@@ -118,12 +118,16 @@ while True:
 
     ##################################################
     foooo = abs(ggray - fgray)
-    cv2.imshow('fpppp',foooo)
+    cv2.imshow('Gray difference',foooo)
     foreground1 = (foooo > 15 )
     ################
     foooo1y = abs(gy[:,:,0] - f1y[:,:,0])
     foooo2y = abs(gy[:,:,1] - f1y[:,:,1])
     foooo3y = abs(gy[:,:,2] - f1y[:,:,2])
+    cv2.imshow('Y difference',foooo1y)
+    cv2.imshow('CB difference',foooo2y)
+    cv2.imshow('CR difference',foooo3y)
+
     fbool1y=(foooo1y > 15 )
     fbool2y=(foooo2y > 15 )
     fbool3y=(foooo3y > 15 )
@@ -131,9 +135,10 @@ while True:
     fbool2y= np.asarray(fbool2y,dtype=np.uint8)
     fbool3y= np.asarray(fbool3y,dtype=np.uint8)
 ################ try addition
-    fadd   = cv2.add(foooo1y,foooo2y)
-    fadd   = cv2.add(fadd,foooo3y)
-    foreground1 = (fadd > 15 )
+    fadd   = cv2.add(foooo1y/16,foooo2y)
+    fadd   = cv2.add(fadd,foooo3y/16)
+    fadd   = cv2.add(fadd,foooo/16)# test gray
+    foreground1 = (fadd > 25 )
 
     # # ##########foreground1y = (foooo1y > 15 ) ||(foooo2y > 15 )|| (foooo3y > 15 )
     # foreground1y = cv2.bitwise_or(fbool1y,fbool1y,mask=fbool2y)
@@ -154,13 +159,40 @@ while True:
     #########
 
     #################### increase constrta
-    clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(5,5))
-    cl1=clahe.apply(foooo2)
+    # clahe = cv2.createCLAHE(clipLimit=2.0,tileGridSize=(5,5))
+    # cl1=clahe.apply(foooo2)# clahe on gray
+    # cl1=clahe.apply(foooo2y)# clahe on CB2
+    cl1=foooo2y
+
     gray = cl1
     #####################
+
+
+
+
+
+
     #############
-    gray = cv2.medianBlur(foooo2,11)
+    gray = cv2.medianBlur(foooo2,5)
     cv2.imshow('aftermedianBlur',gray)
+###################################
+
+    ##############
+    contours0, hierarchy0 = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Fill the contour on the source image
+    # This will convert skin color into black color
+    facearea = 500
+    for i, c in enumerate(contours0):
+        area = cv2.contourArea(c)
+        # area can be configured
+        if area > facearea:
+            cv2.drawContours(gray, contours0, i, (255, 255, 255), -1) # -1 fills the countour, else you can give outline thinkness
+
+##############################################
+
+
+##############################################
     thresh1 = process_image.threshold_otsu(gray)
     cv2.imshow('afterotsu',thresh1)
     dilation = process_image.region_filling(thresh1)
@@ -168,14 +200,14 @@ while True:
     foreground1 = dilation
     kernel = np.ones((5,5),np.float)
     erosion = cv2.erode(foreground1,kernel,iterations=1)
-    cv2.imshow('erosion',erosion)
+    # cv2.imshow('erosion',erosion)
     open1 = cv2.morphologyEx(erosion,cv2.MORPH_OPEN,kernel)
-    cv2.imshow('open1',open1)
+    # cv2.imshow('open1',open1)
     close = cv2.morphologyEx(open1,cv2.MORPH_CLOSE,kernel)
-    cv2.imshow('close',close)
+    # cv2.imshow('close',close)
     foreground1 = close
     ############
-    cv2.imshow('frame2',frame2)
+    # cv2.imshow('frame2',frame2)
     maskedimage = cv2.bitwise_and(frame2,frame2,mask=foreground1)
     cv2.imshow('maskedimage',maskedimage)
     #############remove faces
@@ -203,21 +235,21 @@ while True:
 
     # Fill the contour on the source image
     # This will convert skin color into black color
-    facearea = 7000
+    facearea = 2000
     for i, c in enumerate(contours):
         area = cv2.contourArea(c)
         # area can be configured
         if area > facearea:
             cv2.drawContours(f1, contours, i, (0, 0, 0), -1) # -1 fills the countour, else you can give outline thinkness
 
-
+##############################################
 
 
     # create gray scale image
     # f1small=f1[90:323,90:323]
     cv2.imshow('f1beforefinal',f1)
     gray = cv2.cvtColor(f1, cv2.COLOR_BGR2GRAY)
-    cv2.imshow('graybeforefinal',gray)
+    # cv2.imshow('graybeforefinal',gray)
 
     # gray = cv2.cvtColor(f1, cv2.COLOR_BGR2GRAY)
     # convert black to white and rest to black
@@ -229,8 +261,8 @@ while True:
     # foreground1.astype(float)
     cv2.imshow(winName1,g)
 
-    cv2.imshow('live',frame2)
-    cv2.imshow('foregrounf',foreground1)
+    # cv2.imshow('live',frame2)
+    # cv2.imshow('foregrounf',foreground1)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
 
