@@ -1,0 +1,193 @@
+import numpy as np
+import cv2
+from Tkinter import *
+from PIL import Image
+from PIL import ImageTk
+from scipy import stats
+import copy
+import algorithm.process_image as process_image
+
+
+# Just a silly counter to keep track of frames being
+# generated, it can be used to save frames by giving them
+# unique names in serial order. The counter will be increased
+# by 1 as new frame will be read from video feed.
+frameNumber = 0
+cameraNumber=0;#0 for others
+
+face_cascade = cv2.CascadeClassifier('haar_face.xml')
+
+# A boolean value tell if the frame is to be saved or not
+saveFrame = False
+
+winName1 = "Live feed"
+
+cv2.startWindowThread()
+cv2.namedWindow(winName1)
+
+
+cap1 = cv2.VideoCapture(cameraNumber);
+
+###########################################
+def backgroundDetect():
+    buf = 10;
+    stride = 15;
+    r = np.random.randint(0,stride,buf+1);
+    print r
+    t=0;
+
+    start = 100;
+    k = start+stride*buf;
+    diff = np.zeros(1,np.float64);
+
+    ret,frame = cap1.read();
+    # cv2.imshow(winName1,frame)
+    for i in range(k+1):
+        ret,f = cap1.read(); # read the next video frame
+        f = cv2.flip(f,1)
+        # cv2.imshow(winName1,f);
+        if( i == 1):
+            height,width = f.shape[:2];
+            framesR = np.zeros(shape=(height,width,buf+1),dtype=np.float64);
+            print framesR.shape
+            framesG = np.zeros(shape=(height,width,buf+1),dtype=np.float64);
+            framesB = np.zeros(shape=(height,width,buf+1),dtype=np.float64);
+            f_1 = f;
+            # diff(i) = 0;
+        else:
+            # diff(i) = sum(sum(abs(rgb2gray(f)-rgb2gray(f_1))>0.07))/(s(1)*s(2));
+            f_1 = f;
+
+
+        if (t<=buf and i>=start and r[t] == i%stride):
+            # cv2.imshow('222',f);
+            print t
+            framesR[:,:,t] = f[:,:,0];
+            framesG[:,:,t] = f[:,:,1];
+            framesB[:,:,t] = f[:,:,2];
+            t = t + 1;
+
+
+        # %foreground = step(foregroundDetector, frame);
+
+    background = f;
+    temp=stats.mode(framesR,2)[0];
+    # print temp;
+    print temp.shape;
+    background[:,:,0] =temp[:,:,0]
+    temp=stats.mode(framesG,2)[0];
+    # print temp;
+    print temp.shape;
+    background[:,:,1] =temp[:,:,0]
+
+    temp=stats.mode(framesB,2)[0];
+    print temp.shape;
+    background[:,:,2] =temp[:,:,0]
+    # print temp;
+    # background[:,:,0] =
+    # background[:,:,1] = stats.mode(framesG)[0];
+    # background[:,:,2] = stats.mode(framesB)[0];
+
+
+    # cv2.imshow(winName2,background);
+    return background
+
+# ###########################
+
+bgframe=backgroundDetect();
+bgframe_Y = cv2.cvtColor(bgframe,cv2.COLOR_BGR2YCR_CB)
+
+
+bgframe_gray= cv2.cvtColor(bgframe, cv2.COLOR_BGR2GRAY)
+#
+
+while True:
+
+    ret,frame= cap1.read()
+    frame = cv2.flip(frame,1)
+    # word frame and image have been used for one-another
+    f1 = copy.deepcopy(frame)
+    f1y = cv2.cvtColor(f1,cv2.COLOR_BGR2YCR_CB)
+    f1gray= cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    ##############detect faces #####################
+    faces = face_cascade.detectMultiScale(f1gray, 1.3, 5)
+
+    fdiff_gray = abs(bgframe_gray - f1gray)
+
+    fdiff_y = abs(bgframe_Y[:,:,0] - f1y[:,:,0])
+    fdiff_cr = abs(bgframe_Y[:,:,1] - f1y[:,:,1])
+    fdiff_cb= abs(bgframe_Y[:,:,2] - f1y[:,:,2])
+
+    #
+    # fdiff_y = abs(f1y[:,:,0])
+    # fdiff_cr = abs(f1y[:,:,1])
+    # fdiff_cb= abs(f1y[:,:,2])
+
+
+########
+    kernel = np.ones((5,5),np.float)
+    erosion = cv2.erode(fdiff_y,kernel,iterations=0)
+    # cv2.imshow('erosion',erosion)
+    open1 = cv2.morphologyEx(erosion,cv2.MORPH_OPEN,kernel)
+    cv2.imshow('open1',open1)
+    fdiff_y=open1
+
+
+
+    fdiff_y  = cv2.medianBlur(fdiff_y,7)
+    fdiff_cr = cv2.medianBlur(fdiff_cr,7)
+    fdiff_cb = cv2.medianBlur(fdiff_cb,7)
+
+########
+    cv2.imshow('Y difference',fdiff_y)
+    cv2.imshow('CB difference',fdiff_cb)
+    cv2.imshow('CR difference',fdiff_cr)
+    #### sanity check
+    thresh1 = process_image.threshold_otsu(fdiff_y)
+    cv2.imshow('afterotsuY',thresh1)
+    thresh1 = process_image.threshold_otsu(fdiff_cb)
+    cv2.imshow('afterotsuCr',thresh1)
+    thresh1 = process_image.threshold_otsu(fdiff_cr)
+    cv2.imshow('afterotsuCb',thresh1)
+
+
+
+    #########
+    threshold = 30
+    fdiff_y_Bool =(fdiff_y > threshold )
+    fdiff_cr_Bool=(fdiff_cr > threshold )
+    fdiff_cb_Bool=(fdiff_cb > threshold )
+
+
+
+
+    fdiff_y_Bool8= np.asarray(fdiff_y_Bool,dtype=np.uint8)
+    fdiff_cr_Bool8= np.asarray(fdiff_cr_Bool,dtype=np.uint8)
+    fdiff_cb_Bool8= np.asarray(fdiff_cb_Bool,dtype=np.uint8)
+    fall = cv2.add(fdiff_y_Bool8,fdiff_cr_Bool8)
+    fall = cv2.add(fall,fdiff_cb_Bool8)
+    fall_Bool = fall>0
+    ret, fall_Bool8 = cv2.threshold(fall, 2, 255, cv2.THRESH_BINARY_INV)
+
+
+    ret, fdiff_y_Bool8th  = cv2.threshold(fdiff_y, threshold, 255, cv2.THRESH_BINARY_INV)
+    ret, fdiff_cr_Bool8th = cv2.threshold(fdiff_cr, threshold, 255, cv2.THRESH_BINARY_INV)
+    ret, fdiff_cb_Bool8th = cv2.threshold(fdiff_cb, threshold, 255, cv2.THRESH_BINARY_INV)
+
+    cv2.imshow('Y differencebool',fdiff_y_Bool8th)
+    cv2.imshow('CB differencebool',fdiff_cb_Bool8th)
+    cv2.imshow('CR differencebool',fdiff_cr_Bool8th)
+
+    cv2.imshow('fall_Bool',fall_Bool8)
+
+
+    # cv2.imshow('live',frame2)
+    # cv2.imshow('foregrounf',foreground1)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+
+        break
+
+cap1.release()
+cv2.destroyWindow(winName1)
+# cv2.destroyWindow(winName2)
