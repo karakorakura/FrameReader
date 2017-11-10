@@ -1,2 +1,2 @@
 # FrameReader
-Read and save black and white segmented skin frames and output as image
+Raw testing code for sign-language interpreter
