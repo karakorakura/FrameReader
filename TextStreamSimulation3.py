@@ -62,16 +62,16 @@ for inputCharacter in inputStream:
                 if start_index==prevstart_index:
                     prevstart_index, prevend_index, (previnsert_order, prevword) = start_index, end_index, (insert_order, word)
                     continue;#skip
-                elif start_index<=prevend_index:
-                    continue;#skip
                 sentenceStream+=prevword
                 sentenceStream+=" "
                 print(prevword),
-                prevstart_index, prevend_index, (previnsert_order, prevword) = start_index, end_index, (insert_order, word)
-            sentenceStream+=prevword
-            sentenceStream+=" "
-            print(prevword),
-            tupleResults=[]
+                break;
+
+                # prevstart_index, prevend_index, (previnsert_order, prevword) = start_index, end_index, (insert_order, word)
+            # sentenceStream+=prevword
+            # sentenceStream+=" "
+            # print(prevword),
+            # tupleResults=[]
             haystack=haystack[prevend_index+1:]
             textStream = textStream[prevend_index+1:]
 
